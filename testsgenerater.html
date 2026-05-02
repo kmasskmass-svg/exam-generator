@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد الاختبارات الذكي</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Tajawal) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبات قراءة الملفات وتحويلها -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- مكتبة تحويل HTML إلى PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* تنسيق ورقة الاختبار للطباعة والعرض */
+        #exam-paper {
+            background-color: white;
+            min-height: 297mm;
+            width: 210mm;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            color: black;
+            box-sizing: border-box; /* لمنع خروج العناصر عن الورقة */
+        }
+        #exam-paper * {
+            box-sizing: border-box;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #exam-paper, #exam-paper * { visibility: visible; }
+            #exam-paper {
+                position: absolute;
+                left: 0;
+                top: 0;
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+        }
+        /* مؤشر التحميل */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* فواصل الصفحات والترقيم */
+        .avoid-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        /* التبديل (Toggle Switch) */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #10b981; }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+<body class="text-gray-800 antialiased p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-blue-700 mb-2"><i class="fa-solid fa-file-signature"></i> نموذج الاختبار الذكي</h1>
+            <p class="text-gray-700 text-lg font-bold">أعده: كليب بن أحمد الزهراني</p>
+            <p class="text-gray-600 mt-2">قم برفع المادة العلمية ودع الذكاء الاصطناعي يبني لك اختباراً متكاملاً مع الإجابة النموذجية</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- لوحة التحكم وإدخال البيانات (العمود الأيمن) -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- القسم 1: ترويسة الاختبار -->
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                    <h2 class="text-xl font-bold mb-4 text-blue-600"><i class="fa-solid fa-heading"></i> 1. ترويسة الاختبار</h2>
+                    <div class="space-y-3">
+                        <p class="text-xs text-gray-500 mb-2">قم بالتأشير على الخانات التي تريد إظهارها:</p>
+                        <!-- Right -->
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-r1" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-r1" value="المملكة العربية السعودية" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-r2" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-r2" value="إدارة التعليم بـ ........" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-r3" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-r3" value="المدرسة: ........" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        
+                        <!-- Left -->
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-l1" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-l1" value="المادة: ........" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-l2" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-l2" value="الصف: ........" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-l3" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-l3" value="الزمن: ........" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        
+                        <!-- Center -->
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-c1" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-c1" value="اختبار أعمال السنة" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 font-bold"></div>
+                        <div class="flex flex-col gap-2 mt-2 p-3 bg-gray-50 border border-gray-200 rounded">
+                            <div class="flex items-center gap-2"><input type="checkbox" id="chk-logo" checked class="w-5 h-5 accent-blue-600"><span class="text-sm font-bold text-gray-700">إظهار الشعار (اللوجو)</span></div>
+                            <input type="file" id="logoInput" accept="image/*" class="w-full text-sm text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        </div>
+
+                        <hr class="my-3 border-gray-300">
+                        
+                        <!-- Student Box Settings -->
+                        <h3 class="font-bold text-sm text-gray-700">صندوق بيانات الطالب:</h3>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="chk-student" checked class="w-5 h-5 accent-blue-600"><input type="text" id="val-student" value="اسم الطالب" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"></div>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="flex items-center gap-2"><input type="checkbox" id="chk-student-id" checked class="w-4 h-4 accent-blue-600"><input type="text" id="val-student-id" value="رقم المتدرب" class="w-full p-1 border border-gray-300 rounded text-xs"></div>
+                            <div class="flex items-center gap-2"><input type="checkbox" id="chk-student-section" checked class="w-4 h-4 accent-blue-600"><input type="text" id="val-student-section" value="رقم الشعبة" class="w-full p-1 border border-gray-300 rounded text-xs"></div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1"><input type="checkbox" id="chk-student-teacher" checked class="w-4 h-4 accent-blue-600"><input type="text" id="val-student-teacher" value="مدرس المادة:" class="w-full p-1 border border-gray-300 rounded text-xs"></div>
+                        
+                        <hr class="my-3 border-gray-300">
+                        
+                        <!-- Numbering Settings -->
+                        <h3 class="font-bold text-sm text-gray-700">ترقيم الأسئلة:</h3>
+                        <select id="numberingType" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm">
+                            <option value="section">مستقل لكل سؤال رئيسي (1, 2, 3..)</option>
+                            <option value="continuous">متسلسل لجميع الأسئلة (1.. 20)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- القسم 2: المادة العلمية -->
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-green-500">
+                    <h2 class="text-xl font-bold mb-4 text-green-600"><i class="fa-solid fa-file-upload"></i> 2. المادة العلمية</h2>
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700">ارفع ملف (PDF أو Word):</label>
+                        <input type="file" id="fileInput" accept=".pdf,.doc,.docx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+                        <div class="text-center text-gray-400 font-bold text-sm">أو</div>
+                        <label class="block text-sm font-medium text-gray-700">ألصق النص مباشرة:</label>
+                        <textarea id="textInput" rows="4" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500 text-sm" placeholder="ضع النص هنا..."></textarea>
+                        <div id="fileStatus" class="text-sm font-semibold hidden"></div>
+                        
+                        <hr class="my-3 border-gray-300">
+                        
+                        <!-- Scope Settings -->
+                        <label class="block text-sm font-medium text-gray-700">نطاق الأسئلة من المادة (اختياري):</label>
+                        <input type="text" id="questionScope" placeholder="مثال: شاملة، من ص 10 إلى ص 20، أو عن موضوع معين..." class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- القسم 3: نوع وعدد الأسئلة -->
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-500">
+                    <h2 class="text-xl font-bold mb-4 text-purple-600"><i class="fa-solid fa-list-ol"></i> 3. إعداد الأسئلة</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <label>اختيار من متعدد</label>
+                            <input type="number" id="mcqCount" min="0" max="20" value="3" class="w-16 p-1 border border-gray-300 rounded text-center">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label>صح وخطأ</label>
+                            <input type="number" id="tfCount" min="0" max="20" value="3" class="w-16 p-1 border border-gray-300 rounded text-center">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label>ملء الفراغات</label>
+                            <input type="number" id="fillCount" min="0" max="20" value="2" class="w-16 p-1 border border-gray-300 rounded text-center">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label>أسئلة مقالية</label>
+                            <input type="number" id="essayCount" min="0" max="10" value="2" class="w-16 p-1 border border-gray-300 rounded text-center">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- زر التوليد -->
+                <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200 flex justify-center items-center gap-2 text-lg">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> توليد الاختبار
+                </button>
+                <div id="statusMessage" class="text-sm font-bold text-center mt-2 hidden"></div>
+
+            </div>
+
+            <!-- المعاينة والتصدير (العمود الأيسر) -->
+            <div class="lg:col-span-2 flex flex-col items-center">
+                
+                <!-- خيارات العرض والتصدير -->
+                <div id="exportSection" class="w-full flex justify-between items-center mb-4 hidden bg-white p-3 rounded-lg shadow">
+                    <div class="flex items-center gap-3">
+                        <label class="switch">
+                            <input type="checkbox" id="toggleAnswers">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="font-bold text-green-700 text-sm">عرض الإجابة النموذجية</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportWord()" class="bg-blue-800 hover:bg-blue-900 text-white px-3 py-2 rounded shadow font-medium flex items-center gap-1 text-sm">
+                            <i class="fa-solid fa-file-word"></i> Word
+                        </button>
+                        <button onclick="exportPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded shadow font-medium flex items-center gap-1 text-sm">
+                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ورقة الاختبار (المعاينة) -->
+                <div class="w-full overflow-auto bg-gray-200 p-4 rounded-xl flex justify-center border-2 border-dashed border-gray-400">
+                    
+                    <div id="exam-paper" class="hidden relative pb-10" style="direction: rtl; text-align: right;">
+                        <div id="exam-content-wrapper"></div>
+                        
+                        <div class="mt-16 text-center font-bold avoid-break" style="text-align: center; font-weight: bold; font-size: 1rem; margin-top: 40px; margin-bottom: 20px;">
+                            <p>انتهت الأسئلة، مع تمنياتنا لكم بالتوفيق والنجاح</p>
+                        </div>
+                    </div>
+                    
+                    <!-- حالة عدم وجود بيانات -->
+                    <div id="empty-state" class="text-center py-20 text-gray-500">
+                        <i class="fa-solid fa-file-circle-question text-6xl mb-4 text-gray-300"></i>
+                        <p class="text-xl">ورقة الاختبار ستظهر هنا بعد التوليد</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = ""; // المفتاح التلقائي
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        let extractedText = "";
+        let currentExamData = null; // تخزين البيانات لتفعيل/إلغاء الإجابات بدون إعادة تحميل
+
+        const fileInput = document.getElementById('fileInput');
+        const textInput = document.getElementById('textInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const examPaper = document.getElementById('exam-paper');
+        const emptyState = document.getElementById('empty-state');
+        const examContentWrapper = document.getElementById('exam-content-wrapper');
+        const exportSection = document.getElementById('exportSection');
+        const toggleAnswers = document.getElementById('toggleAnswers');
+
+        // دالة عرض رسائل الحالة (تم إرجاعها لحل مشكلة توقف البناء)
+        function showStatus(msg, type) {
+            statusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+            if (type === 'error') {
+                statusMessage.classList.add('text-red-600');
+                statusMessage.innerText = msg;
+            } else if (type === 'success') {
+                statusMessage.classList.add('text-green-600');
+                statusMessage.innerText = msg;
+            } else {
+                statusMessage.innerText = '';
+                statusMessage.classList.add('hidden');
+            }
+        }
+
+        // تحديث العرض عند تبديل الإجابة النموذجية
+        toggleAnswers.addEventListener('change', () => {
+            if(currentExamData) renderExam(currentExamData);
+        });
+
+        // قراءة الشعار
+        let customLogoBase64 = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Ministry_of_Education_Saudi_Arabia.svg/1024px-Ministry_of_Education_Saudi_Arabia.svg.png";
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(event) { customLogoBase64 = event.target.result; }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // معالجة الملفات
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            fileStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
+            fileStatus.classList.add('text-blue-600');
+            fileStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري قراءة الملف...';
+            extractedText = "";
+            try {
+                if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    extractedText = await extractTextFromPDF(file);
+                } else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                    extractedText = await extractTextFromWord(file);
+                } else throw new Error("نوع الملف غير مدعوم.");
+                fileStatus.classList.replace('text-blue-600', 'text-green-600');
+                fileStatus.innerHTML = `<i class="fa-solid fa-check-circle"></i> تم قراءة الملف بنجاح`;
+                textInput.value = "";
+            } catch (error) {
+                fileStatus.classList.replace('text-blue-600', 'text-red-600');
+                fileStatus.innerHTML = `<i class="fa-solid fa-times-circle"></i> خطأ: ${error.message}`;
+            }
+        });
+
+        async function extractTextFromPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(" ") + "\n";
+            }
+            return text;
+        }
+
+        async function extractTextFromWord(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            return result.value;
+        }
+
+        async function fetchWithBackoff(url, options, retries = 5) {
+            let delay = 1000;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // توليد الاختبار
+        generateBtn.addEventListener('click', async () => {
+            let finalMaterial = textInput.value.trim().length > 0 ? textInput.value.trim() : extractedText.trim();
+            if (!finalMaterial || finalMaterial.length < 50) return showStatus('يرجى تقديم مادة علمية كافية.', 'error');
+            if (finalMaterial.length > 40000) finalMaterial = finalMaterial.substring(0, 40000);
+
+            const config = {
+                mcq: parseInt(document.getElementById('mcqCount').value) || 0,
+                tf: parseInt(document.getElementById('tfCount').value) || 0,
+                fill: parseInt(document.getElementById('fillCount').value) || 0,
+                essay: parseInt(document.getElementById('essayCount').value) || 0,
+            };
+
+            if (config.mcq + config.tf + config.fill + config.essay <= 0) return showStatus('اختر سؤالاً واحداً على الأقل.', 'error');
+
+            const scope = document.getElementById('questionScope').value.trim() || 'شاملة من كامل المادة المرفقة';
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<div class="loader"></div> جاري البناء...';
+            showStatus('', 'clear');
+
+            try {
+                const prompt = `أنت خبير تربوي. قم بإعداد أسئلة اختبار مع الإجابات النموذجية.
+نطاق الأسئلة المطلوبة: ${scope}
+المعطيات المطلوبة: 
+${config.mcq} اختيار من متعدد، ${config.tf} صح وخطأ، ${config.fill} ملء فراغ، ${config.essay} مقالي.
+المادة العلمية: """${finalMaterial}"""`;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                mcq: { type: "ARRAY", items: { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "STRING" } } } },
+                                tf: { type: "ARRAY", items: { type: "OBJECT", properties: { question: { type: "STRING" }, answer: { type: "STRING" } } } },
+                                fill: { type: "ARRAY", items: { type: "OBJECT", properties: { question: { type: "STRING" }, answer: { type: "STRING" } } } },
+                                essay: { type: "ARRAY", items: { type: "OBJECT", properties: { question: { type: "STRING" }, answer: { type: "STRING" } } } }
+                            }
+                        }
+                    }
+                };
+
+                const result = await fetchWithBackoff(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const rawJsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                currentExamData = JSON.parse(rawJsonText);
+                
+                toggleAnswers.checked = false; // افتراضياً إخفاء الإجابات
+                renderExam(currentExamData);
+                showStatus('تم بناء الاختبار بنجاح!', 'success');
+            } catch (error) {
+                console.error(error);
+                showStatus(`فشل التوليد: ${error.message} (يرجى المحاولة مرة أخرى)`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> توليد الاختبار';
+            }
+        });
+
+        // دوال مساعدة لمنع انعكاس النصوص في الـ PDF
+        const arabicAlphabet = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'];
+        function getOrdinal(n) { const ordinals = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"]; return ordinals[n - 1] || n; }
+
+        function renderExam(data) {
+            const showAnswers = toggleAnswers.checked;
+            let html = '';
+
+            // 1. الترويسة (تم تعديل المحاذاة حسب الطلب)
+            html += `<table width="100%" style="border-bottom: 2px solid black; margin-bottom: 15px; font-family: 'Tajawal', sans-serif; font-size: 10pt; direction: rtl;" dir="rtl">
+                <tr>
+                    <td width="33%" valign="top" style="text-align: center; font-weight: bold; line-height: 1.5;">`;
+            if(document.getElementById('chk-r1').checked) html += `<div>${document.getElementById('val-r1').value}</div>`;
+            if(document.getElementById('chk-r2').checked) html += `<div>${document.getElementById('val-r2').value}</div>`;
+            if(document.getElementById('chk-r3').checked) html += `<div>${document.getElementById('val-r3').value}</div>`;
+            html += `</td><td width="33%" valign="top" style="text-align: center;">`;
+            if(document.getElementById('chk-logo').checked) html += `<img src="${customLogoBase64}" style="max-height: 60px; margin-bottom: 5px;" alt="شعار">`;
+            if(document.getElementById('chk-c1').checked) html += `<div style="font-weight: bold; font-size: 12pt;">${document.getElementById('val-c1').value}</div>`;
+            html += `</td><td width="33%" valign="top" style="text-align: right; font-weight: bold; line-height: 1.5; padding-right: 10px;">`;
+            if(document.getElementById('chk-l1').checked) html += `<div>${document.getElementById('val-l1').value}</div>`;
+            if(document.getElementById('chk-l2').checked) html += `<div>${document.getElementById('val-l2').value}</div>`;
+            if(document.getElementById('chk-l3').checked) html += `<div>${document.getElementById('val-l3').value}</div>`;
+            html += `</td></tr></table>`;
+
+            // 2. صندوق الطالب (متجاوب ولا يخرج من الصفحة)
+            if(document.getElementById('chk-student').checked) {
+                html += `<table width="100%" style="border: 2px solid black; margin-bottom: 20px; background-color: #f9fafb; direction: rtl; font-family: 'Tajawal', sans-serif; box-sizing: border-box;" dir="rtl">
+                    <tr>
+                        <td width="80%" valign="middle" style="padding: 10px; font-weight: bold; font-size: 10pt; line-height: 1.8;">
+                            <div style="margin-bottom: 5px;">
+                                ${document.getElementById('val-student').value}: <span style="color: #9ca3af;">...............................................................</span>
+                            </div>`;
+                
+                // إضافة الرقم والشعبة في نفس السطر إذا أمكن
+                const hasId = document.getElementById('chk-student-id').checked;
+                const hasSec = document.getElementById('chk-student-section').checked;
+                if(hasId || hasSec) {
+                    html += `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 5px;"><tr>`;
+                    if(hasId) html += `<td width="50%">${document.getElementById('val-student-id').value}: <span style="color: #9ca3af;">...........................</span></td>`;
+                    if(hasSec) html += `<td width="50%">${document.getElementById('val-student-section').value}: <span style="color: #9ca3af;">...........................</span></td>`;
+                    html += `</tr></table>`;
+                }
+
+                if(document.getElementById('chk-student-teacher').checked) {
+                    html += `<div>${document.getElementById('val-student-teacher').value} <span style="color: #9ca3af;">...................................................</span></div>`;
+                }
+
+                html += `</td>
+                        <td width="20%" valign="middle" style="border-right: 2px solid black; text-align: center; padding: 5px;">
+                            <div style="font-weight: bold; font-size: 10pt; margin-bottom: 3px;">الدرجة</div>
+                            <div style="border: 2px solid black; border-radius: 50%; width: 50px; height: 50px; margin: 0 auto; display: table;">
+                                <div style="display: table-cell; vertical-align: middle; text-align: center; font-size: 14pt; font-weight: bold;">/</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>`;
+            }
+
+            let sNum = 1;
+            let qGlobal = 1;
+            const isCont = document.getElementById('numberingType').value === 'continuous';
+
+            // دالة عزل الأرقام لمنع الانعكاس
+            function row(num, text, extraHtml = '') {
+                return `<table width="100%" style="direction: rtl; margin-bottom: 8px; font-size: 11pt;" dir="rtl">
+                            <tr>
+                                <td width="30" valign="top" style="font-weight: bold; text-align: right;">${num}</td>
+                                <td width="15" valign="top" style="font-weight: bold; text-align: right;">-</td>
+                                <td valign="top" style="font-weight: 600; text-align: right; padding-right: 5px;">${text}</td>
+                                ${extraHtml}
+                            </tr>
+                        </table>`;
+            }
+
+            function genSection(title, items, renderItem) {
+                if (!items || !items.length) return '';
+                let out = `<div class="avoid-break" style="margin-bottom: 20px; direction: rtl;" dir="rtl">
+                    <h3 style="font-weight: bold; font-size: 11pt; margin-bottom: 12px; background: #f3f4f6; padding: 6px; border-right: 3px solid #3b82f6;">
+                        السؤال ${getOrdinal(sNum)}: ${title}
+                    </h3><div style="padding-right: 5px;">`;
+                let local = 1;
+                items.forEach(q => {
+                    out += `<div class="avoid-break" style="margin-bottom: 15px;">${renderItem(q, isCont ? qGlobal : local)}</div>`;
+                    if(isCont) qGlobal++;
+                    local++;
+                });
+                out += `</div></div>`;
+                sNum++;
+                return out;
+            }
+
+            // 1. اختيارات
+            html += genSection('اختر الإجابة الصحيحة فيما يلي:', data.mcq, (q, num) => {
+                let ansMark = showAnswers ? `<div style="margin-top:4px; color: #166534; font-weight: bold; font-size:10pt;">الجواب: ${q.answer}</div>` : '';
+                let item = row(num, q.question);
+                item += `<table width="100%" style="direction: rtl; margin-top: 5px; font-size: 10pt;" dir="rtl">`;
+                for(let i=0; i<q.options.length; i+=2) {
+                    item += `<tr>`;
+                    item += `<td width="50%" valign="top" style="padding: 4px 0;">
+                                <table width="100%" dir="rtl"><tr><td width="35" style="color:#1e40af; font-weight:bold; white-space:nowrap;">( ${arabicAlphabet[i]} )</td><td>${q.options[i]}</td></tr></table>
+                             </td>`;
+                    if(q.options[i+1]) {
+                        item += `<td width="50%" valign="top" style="padding: 4px 0;">
+                                    <table width="100%" dir="rtl"><tr><td width="35" style="color:#1e40af; font-weight:bold; white-space:nowrap;">( ${arabicAlphabet[i+1]} )</td><td>${q.options[i+1]}</td></tr></table>
+                                 </td>`;
+                    }
+                    item += `</tr>`;
+                }
+                item += `</table>${ansMark}`;
+                return item;
+            });
+
+            // 2. صح وخطأ
+            html += genSection('ضع علامة (صح) أو (خطأ) أمام العبارات:', data.tf, (q, num) => {
+                let fill = showAnswers ? `<span style="color: #166534;">${q.answer}</span>` : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+                let brk = `<td width="80" valign="top" style="font-weight: bold; font-size: 11pt; text-align: left; white-space: nowrap;">( ${fill} )</td>`;
+                return row(num, q.question, brk);
+            });
+
+            // 3. فراغات
+            html += genSection('أكمل الفراغات التالية:', data.fill, (q, num) => {
+                let formatted = q.question.replace(/_{2,}/g, ' ...................... ');
+                if(!formatted.includes('......')) formatted += ' ...................... ';
+                let ansMark = showAnswers ? `<div style="margin-top:4px; color: #166534; font-weight: bold; font-size:10pt;">الجواب: ${q.answer}</div>` : '';
+                return row(num, `<span style="line-height: 1.6;">${formatted}</span>`) + ansMark;
+            });
+
+            // 4. مقالي
+            html += genSection('أجب عن الأسئلة التالية:', data.essay, (q, num) => {
+                let item = row(num, q.question);
+                if(showAnswers) {
+                    item += `<div style="margin-top:8px; padding:8px; background-color:#ecfdf5; border:1px solid #a7f3d0; border-radius:4px; color: #166534; font-weight: bold; font-size:10pt;">الإجابة: ${q.answer}</div>`;
+                } else {
+                    item += `<div style="margin-top: 15px; border-bottom: 2px dotted #9ca3af; width: 100%;"></div>
+                             <div style="margin-top: 25px; border-bottom: 2px dotted #9ca3af; width: 100%;"></div>
+                             <div style="margin-top: 25px; border-bottom: 2px dotted #9ca3af; width: 100%;"></div>`;
+                }
+                return item;
+            });
+
+            examContentWrapper.innerHTML = html;
+            emptyState.classList.add('hidden');
+            examPaper.classList.remove('hidden');
+            exportSection.classList.remove('hidden');
+        }
+
+        function exportPDF() {
+            const el = document.getElementById('exam-paper');
+            const opt = {
+                margin:       [10, 10, 10, 10], 
+                filename:     `${document.getElementById('val-c1').value || 'اختبار'}.pdf`,
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            el.style.boxShadow = 'none';
+            html2pdf().set(opt).from(el).save().then(() => el.style.boxShadow = '');
+        }
+
+        function exportWord() {
+            const titleName = document.getElementById('val-c1').value || 'اختبار';
+            const clone = document.getElementById("exam-paper").cloneNode(true);
+            const sourceHTML = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><title>${titleName}</title>
+                <style>body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; } table { border-collapse: collapse; } .avoid-break { page-break-inside: avoid; }</style></head>
+                <body dir="rtl">${clone.innerHTML}</body></html>`;
+            const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = `${titleName}.doc`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
